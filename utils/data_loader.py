@@ -243,7 +243,8 @@ def create_heatmap_data(df, lat_col='lat', lon_col='lon', value_col='value'):
 
 def get_sulaimani_bounds():
     """
-    Get approximate bounding box for Sulaimani
+    Get expanded bounding box for Sulaimani (3x coverage area)
+    Captures city center plus surrounding suburbs and rural areas
     
     Returns:
         dict: Dictionary with center coordinates and bounds
@@ -251,10 +252,10 @@ def get_sulaimani_bounds():
     return {
         'center': [35.5608, 45.4347],
         'bounds': [
-            [35.48, 45.35],  # Southwest
-            [35.64, 45.52]   # Northeast
+            [35.40, 45.25],  # Southwest (expanded)
+            [35.72, 45.62]   # Northeast (expanded)
         ],
-        'zoom_default': 12
+        'zoom_default': 11  # Zoom out slightly to show larger area
     }
 
 
