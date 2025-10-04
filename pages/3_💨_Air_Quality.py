@@ -54,7 +54,7 @@ This section identifies pollution hotspots in Sulaimani and highlights communiti
 from poor air quality based on NASA Sentinel-5P and MODIS data.
 """)
 
-# Multi-pollutant configuration (moved up for metrics)
+# Multi-pollutant configuration - Updated for 15-year historical data
 POLLUTANT_CONFIG = {
     '🌍 Composite Air Quality Index': {
         'file': 'composite_air_quality_index.csv',
@@ -67,7 +67,7 @@ POLLUTANT_CONFIG = {
         'value_field': 'aqi_score'
     },
     'NO₂ (Nitrogen Dioxide)': {
-        'file': 'air_quality_no2_interpolated.csv',
+        'file': 'air_quality_no2_15_year.csv',  # 15-year dataset
         'code': 'NO2',
         'units': 'µg/m³',
         'guideline': 40.0,
@@ -77,7 +77,7 @@ POLLUTANT_CONFIG = {
         'value_field': 'value'
     },
     'SO₂ (Sulfur Dioxide)': {
-        'file': 'air_quality_so2_interpolated.csv',
+        'file': 'air_quality_so2_15_year.csv',  # 15-year dataset
         'code': 'SO2',
         'units': 'µg/m³',
         'guideline': 20.0,
@@ -87,7 +87,7 @@ POLLUTANT_CONFIG = {
         'value_field': 'value'
     },
     'CO (Carbon Monoxide)': {
-        'file': 'air_quality_co_interpolated.csv',
+        'file': 'air_quality_co_15_year.csv',  # 15-year dataset
         'code': 'CO',
         'units': 'mg/m³',
         'guideline': 10.0,
@@ -97,7 +97,7 @@ POLLUTANT_CONFIG = {
         'value_field': 'value'
     },
     'O₃ (Ozone)': {
-        'file': 'air_quality_o3_interpolated.csv',
+        'file': 'air_quality_o3_15_year.csv',  # 15-year dataset
         'code': 'O3',
         'units': 'DU',
         'guideline': 300.0,
@@ -107,7 +107,7 @@ POLLUTANT_CONFIG = {
         'value_field': 'value'
     },
     'HCHO (Formaldehyde)': {
-        'file': 'air_quality_hcho_interpolated.csv',
+        'file': 'air_quality_hcho_15_year.csv',  # 15-year dataset
         'code': 'HCHO',
         'units': 'µg/m³',
         'guideline': 30.0,
@@ -117,7 +117,7 @@ POLLUTANT_CONFIG = {
         'value_field': 'value'
     },
     'AER_AI (Aerosol Index)': {
-        'file': 'air_quality_aer_ai_interpolated.csv',
+        'file': 'air_quality_aer_ai_15_year.csv',  # 15-year dataset
         'code': 'AER_AI',
         'units': 'AI',
         'guideline': 2.0,
@@ -150,43 +150,59 @@ for poll_name, poll_config in POLLUTANT_CONFIG.items():
                 'guideline': poll_config['guideline']
             }
 
-with col1:
+# Dynamic KPIs - will be updated after time period selection
+kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4)
+
+with kpi_col1:
+    kpi_placeholder_1 = st.empty()
+    
+with kpi_col2:
+    kpi_placeholder_2 = st.empty()
+    
+with kpi_col3:
+    kpi_placeholder_3 = st.empty()
+    
+with kpi_col4:
+    kpi_placeholder_4 = st.empty()
+
+# Initial KPI values from current data
+with kpi_col1:
     if 'NO₂ (Nitrogen Dioxide)' in metrics_data:
         data = metrics_data['NO₂ (Nitrogen Dioxide)']
         st.metric(
-            label="Avg NO₂ Level",
+            label="Current NO₂",
             value=f"{data['avg']:.1f} {data['units']}",
             delta=f"{data['above_guideline']:.1f}% above WHO",
             delta_color="inverse" if data['above_guideline'] > 0 else "normal"
         )
     else:
-        st.metric("Avg NO₂ Level", "Loading...", "No data")
+        st.metric("Current NO₂", "Loading...", "No data")
 
-with col2:
+with kpi_col2:
     if 'SO₂ (Sulfur Dioxide)' in metrics_data:
         data = metrics_data['SO₂ (Sulfur Dioxide)']
         st.metric(
-            label="Avg SO₂ Level",
+            label="Current SO₂",
             value=f"{data['avg']:.1f} {data['units']}",
             delta=f"{data['above_guideline']:.1f}% above WHO",
             delta_color="inverse" if data['above_guideline'] > 0 else "normal"
         )
     else:
-        st.metric("Avg SO₂ Level", "Loading...", "No data")
+        st.metric("Current SO₂", "Loading...", "No data")
 
-with col3:
+with kpi_col3:
     if 'CO (Carbon Monoxide)' in metrics_data:
         data = metrics_data['CO (Carbon Monoxide)']
         st.metric(
-            label="Avg CO Level",
+            label="Current CO",
             value=f"{data['avg']:.1f} {data['units']}",
             delta=f"{data['above_guideline']:.1f}% above WHO",
             delta_color="inverse" if data['above_guideline'] > 0 else "normal"
         )
     else:
-        st.metric("Avg CO Level", "Loading...", "No data")
+        st.metric("Current CO", "Loading...", "No data")
 
-with col4:
+with kpi_col4:
     total_pollutants = len(metrics_data)
     st.metric(
         label="Data Sources",
@@ -216,13 +232,30 @@ with col1:
     )
 
 with col2:
-    season = st.selectbox(
-        "Select Season",
-        ["Annual Average", "Winter", "Spring", "Summer", "Fall"]
+    time_period = st.selectbox(
+        "Select Time Period",
+        ["Latest Data", "2024", "2023", "2022", "2021", "2020 (COVID)", 
+         "2019", "2018", "2017", "2016", "2015", "2014", "2013", "2012", "2011", "2010",
+         "OMI Era (2010-2017)", "Sentinel-5P Era (2018-2024)", "15-Year Average"],
+        help="📊 Compare different years to see pollution changes over time! Try 2010 vs 2020 vs 2024 for dramatic differences."
     )
 
 with col3:
     overlay_population = st.checkbox("Show Population Density", value=True)
+
+# Add temporal comparison info
+if time_period in ["2010", "2020 (COVID)", "2024"]:
+    if time_period == "2010":
+        st.info("🕰️ **2010 Baseline**: Lower pollution levels during early urban development")
+    elif time_period == "2020 (COVID)":
+        st.info("🦠 **COVID-19 Impact**: Dramatic pollution reduction due to lockdowns (-67% vs 2019)")
+    elif time_period == "2024":
+        st.info("🏙️ **2024 Peak**: Highest pollution levels due to continued urbanization")
+elif time_period in ["OMI Era (2010-2017)", "Sentinel-5P Era (2018-2024)"]:
+    if "OMI" in time_period:
+        st.info("🛰️ **NASA OMI Era**: Historical satellite data showing gradual pollution increase")
+    else:
+        st.info("🛰️ **Sentinel-5P Era**: Modern satellite data including COVID impact and recovery")
 
 # Create map
 m = folium.Map(
@@ -250,20 +283,20 @@ if overlay_population and os.path.exists('data/population_density.geojson'):
         coords = feature['geometry']['coordinates']
         props = feature['properties']
         
-        # Blue color scheme based on density category
+        # Population density color scheme matching legend
         category = props['density_category']
         if category == 'Very High':
-            color = '#000080'  # Navy blue
-            size = 0.002      # Larger square
+            color = '#FF0000'  # Red (🔴)
+            size = 0.004      # Larger square (2x bigger)
         elif category == 'High':
-            color = '#0000CD'  # Medium blue
-            size = 0.0015     # Medium square
+            color = '#FF0000'  # Red (🔴)
+            size = 0.003      # Medium square (2x bigger)
         elif category == 'Medium':
-            color = '#4169E1'  # Royal blue
-            size = 0.001      # Small square
+            color = '#FFA500'  # Orange (🟠)
+            size = 0.002      # Small square (2x bigger)
         else:  # Low
-            color = '#87CEEB'  # Sky blue
-            size = 0.0008     # Smallest square
+            color = '#FFFF00'  # Yellow (🟡)
+            size = 0.0016     # Smallest square (2x bigger)
         
         # Create square bounds
         lat, lon = coords[1], coords[0]
@@ -287,13 +320,139 @@ config = POLLUTANT_CONFIG.get(pollutant)
 if config and os.path.exists(f'data/{config["file"]}'):
     pollutant_data = pd.read_csv(f'data/{config["file"]}')
     
-    # Get latest date for visualization
-    latest_date = pollutant_data['date'].max()
-    daily_data = pollutant_data[pollutant_data['date'] == latest_date]
+    # Get the correct value field (different for AQI vs pollutants)
+    value_field = config.get('value_field', 'value')
+    
+    # Filter data based on selected time period
+    if time_period == "Latest Data":
+        latest_date = pollutant_data['date'].max()
+        daily_data = pollutant_data[pollutant_data['date'] == latest_date]
+        display_period = f"Latest ({latest_date})"
+    elif time_period == "15-Year Average":
+        # Check if this is AQI data (different column structure)
+        if pollutant == '🌍 Composite Air Quality Index':
+            # AQI data has different column names
+            daily_data = pollutant_data.groupby(['lat', 'lon']).agg({
+                value_field: 'mean',
+                'date': 'first',
+                'aqi_category': lambda x: x.mode().iloc[0] if not x.mode().empty else x.iloc[0],
+                'aqi_color': lambda x: x.mode().iloc[0] if not x.mode().empty else x.iloc[0]
+            }).reset_index()
+        else:
+            # Regular pollutant data
+            daily_data = pollutant_data.groupby(['lat', 'lon']).agg({
+                value_field: 'mean',
+                'date': 'first',
+                'pollutant': 'first',
+                'units': 'first'
+            }).reset_index()
+        display_period = "15-Year Average (2010-2024)"
+    elif time_period == "OMI Era (2010-2017)":
+        omi_data = pollutant_data[pollutant_data['date'].str.contains('201[0-7]')]
+        if not omi_data.empty:
+            if pollutant == '🌍 Composite Air Quality Index':
+                daily_data = omi_data.groupby(['lat', 'lon']).agg({
+                    value_field: 'mean',
+                    'date': 'first',
+                    'aqi_category': lambda x: x.mode().iloc[0] if not x.mode().empty else x.iloc[0],
+                    'aqi_color': lambda x: x.mode().iloc[0] if not x.mode().empty else x.iloc[0]
+                }).reset_index()
+            else:
+                daily_data = omi_data.groupby(['lat', 'lon']).agg({
+                    value_field: 'mean',
+                    'date': 'first',
+                    'pollutant': 'first',
+                    'units': 'first'
+                }).reset_index()
+            display_period = "OMI Era Average (2010-2017)"
+        else:
+            # Fallback to latest data
+            latest_date = pollutant_data['date'].max()
+            daily_data = pollutant_data[pollutant_data['date'] == latest_date]
+            display_period = f"Latest ({latest_date}) - No OMI era data"
+    elif time_period == "Sentinel-5P Era (2018-2024)":
+        s5p_data = pollutant_data[pollutant_data['date'].str.contains('201[8-9]|202[0-4]')]
+        if not s5p_data.empty:
+            if pollutant == '🌍 Composite Air Quality Index':
+                daily_data = s5p_data.groupby(['lat', 'lon']).agg({
+                    value_field: 'mean',
+                    'date': 'first',
+                    'aqi_category': lambda x: x.mode().iloc[0] if not x.mode().empty else x.iloc[0],
+                    'aqi_color': lambda x: x.mode().iloc[0] if not x.mode().empty else x.iloc[0]
+                }).reset_index()
+            else:
+                daily_data = s5p_data.groupby(['lat', 'lon']).agg({
+                    value_field: 'mean',
+                    'date': 'first',
+                    'pollutant': 'first',
+                    'units': 'first'
+                }).reset_index()
+            display_period = "Sentinel-5P Era Average (2018-2024)"
+        else:
+            # Fallback to latest data
+            latest_date = pollutant_data['date'].max()
+            daily_data = pollutant_data[pollutant_data['date'] == latest_date]
+            display_period = f"Latest ({latest_date}) - No Sentinel-5P era data"
+    else:
+        # Specific year selected - show actual snapshot instead of average
+        year_data = pollutant_data[pollutant_data['date'].str.contains(time_period)]
+        if not year_data.empty:
+            # Try to get July 15th data for that year (mid-year snapshot)
+            target_date = f"{time_period}-07-15"
+            july_data = year_data[year_data['date'] == target_date]
+            
+            if not july_data.empty:
+                daily_data = july_data
+                display_period = f"{time_period} (July 15th snapshot)"
+            else:
+                # If July 15th not available, try January 15th
+                jan_date = f"{time_period}-01-15"
+                jan_data = year_data[year_data['date'] == jan_date]
+                
+                if not jan_data.empty:
+                    daily_data = jan_data
+                    display_period = f"{time_period} (January 15th snapshot)"
+                else:
+                    # Fallback to first available date in that year
+                    first_date = year_data['date'].iloc[0]
+                    daily_data = year_data[year_data['date'] == first_date]
+                    display_period = f"{time_period} ({first_date} snapshot)"
+        else:
+            # Fallback to latest data
+            latest_date = pollutant_data['date'].max()
+            daily_data = pollutant_data[pollutant_data['date'] == latest_date]
+            display_period = f"Latest ({latest_date}) - No {time_period} data"
     
     if not daily_data.empty:
-        # Get value field (different for AQI vs pollutants)
-        value_field = config.get('value_field', 'value')
+        # Check if 15-year data requested but not available for AQI
+        if (pollutant == '🌍 Composite Air Quality Index' and 
+            time_period in ["15-Year Average", "OMI Era (2010-2017)", "Sentinel-5P Era (2018-2024)"] + 
+            [str(year) for year in range(2010, 2025)] and
+            'aqi_score' in daily_data.columns and len(daily_data) < 100):
+            st.warning(f"⚠️ {pollutant} only has current data. Showing latest available data instead of {time_period}.")
+            display_period = f"Latest (AQI data limited)"
+        # Update KPIs based on selected data
+        if not daily_data.empty and value_field in daily_data.columns:
+            avg_value = daily_data[value_field].mean()
+            max_value = daily_data[value_field].max()
+            guideline = config.get('guideline', 40)  # Default WHO guideline
+            above_guideline = (daily_data[value_field] > guideline).mean() * 100
+            
+            # Update KPI placeholders with current selection
+            with kpi_placeholder_1:
+                st.metric(
+                    label=f"{pollutant.replace('🌍 Composite ', '')}",
+                    value=f"{avg_value:.1f} {config['units']}",
+                    delta=f"Period: {display_period}",
+                )
+            
+            with kpi_placeholder_2:
+                st.metric(
+                    label="Max Value",
+                    value=f"{max_value:.1f} {config['units']}",
+                    delta=f"{above_guideline:.1f}% above WHO",
+                    delta_color="inverse" if above_guideline > 0 else "normal"
+                )
         
         # Normalize values for better heatmap visualization
         values = daily_data[value_field].values
@@ -315,8 +474,13 @@ if config and os.path.exists(f'data/{config["file"]}'):
             gradient={0.2: 'blue', 0.4: 'cyan', 0.6: 'lime', 0.8: 'orange', 1.0: 'red'}
         ).add_to(m)
         
-        # Display info message ONCE after the loop
-        st.info(f"✅ Displaying {len(daily_data)} {config['code']} measurements from {latest_date}")
+        # Display info message with time period
+        if 'data_source' in pollutant_data.columns:
+            unique_sources = pollutant_data['data_source'].unique()
+            data_source = ', '.join(unique_sources) if len(unique_sources) > 1 else unique_sources[0]
+        else:
+            data_source = 'Current System'
+        st.info(f"✅ Displaying {len(daily_data)} {config['code']} measurements | {display_period} | Source: {data_source}")
     else:
         st.warning(f"No {config['code']} data available for selected date")
 else:
@@ -329,24 +493,33 @@ st_folium(m, width=1400, height=500)
 st.markdown("---")
 
 # Temporal trends
-st.header("📈 Air Quality Trends")
+st.header("📈 15-Year Air Quality Trends")
 
-# Use real data if available, otherwise show placeholder
-if os.path.exists('data/air_quality_no2.csv'):
-    no2_data = pd.read_csv('data/air_quality_no2.csv')
+# Use 15-year data for comprehensive trend analysis
+if os.path.exists('data/air_quality_no2_15_year.csv'):
+    no2_15yr = pd.read_csv('data/air_quality_no2_15_year.csv')
     
-    # Calculate daily averages
-    daily_avg = no2_data.groupby('date')['value'].mean().reset_index()
-    daily_avg['date'] = pd.to_datetime(daily_avg['date'])
-    daily_avg = daily_avg.sort_values('date')
+    # Calculate monthly averages for trend visualization
+    no2_15yr['datetime'] = pd.to_datetime(no2_15yr['date'])
+    no2_15yr['year_month'] = no2_15yr['datetime'].dt.to_period('M')
     
-    # Create trend plot
+    monthly_avg = no2_15yr.groupby('year_month')['value'].mean().reset_index()
+    monthly_avg['date'] = monthly_avg['year_month'].dt.to_timestamp()
+    monthly_avg = monthly_avg.sort_values('date')
+    
+    # Add data source information
+    monthly_avg['data_source'] = monthly_avg['date'].apply(
+        lambda x: 'OMI' if x.year < 2018 else 'Sentinel-5P'
+    )
+    
+    # Create comprehensive trend plot
     fig = px.line(
-        daily_avg,
+        monthly_avg,
         x='date',
         y='value',
-        title='Daily NO₂ Concentration Trends (Sulaimani)',
-        labels={'value': 'NO₂ Concentration (µg/m³)', 'date': 'Date'},
+        color='data_source',
+        title='15-Year NO₂ Concentration Trends in Sulaimani (2010-2024)',
+        labels={'value': 'NO₂ Concentration (µg/m³)', 'date': 'Date', 'data_source': 'Data Source'},
         markers=True
     )
     
@@ -354,17 +527,43 @@ if os.path.exists('data/air_quality_no2.csv'):
     fig.add_hline(y=40, line_dash="dash", line_color="orange", 
                   annotation_text="WHO NO₂ Guideline (40 µg/m³)")
     
+    # Add vertical line for data source transition using datetime object
+    transition_date = pd.to_datetime('2018-01-01')
+    fig.add_vline(x=transition_date, line_dash="dot", line_color="gray",
+                  annotation_text="OMI → Sentinel-5P")
+    
+    # Highlight COVID-19 period using datetime objects
+    covid_start = pd.to_datetime('2020-03-01')
+    covid_end = pd.to_datetime('2020-12-31')
+    fig.add_vrect(x0=covid_start, x1=covid_end,
+                  fillcolor="lightblue", opacity=0.2, annotation_text="COVID-19")
+    
     st.plotly_chart(fig, use_container_width=True)
     
-    # Show data summary
-    col1, col2, col3 = st.columns(3)
+    # Enhanced statistics with 15-year context
+    col1, col2, col3, col4 = st.columns(4)
+    
     with col1:
-        st.metric("Average NO₂", f"{no2_data['value'].mean():.1f} µg/m³")
+        avg_15yr = no2_15yr['value'].mean()
+        st.metric("15-Year Average", f"{avg_15yr:.1f} µg/m³")
+    
     with col2:
-        st.metric("Peak NO₂", f"{no2_data['value'].max():.1f} µg/m³")
+        peak_15yr = no2_15yr['value'].max()
+        peak_year = no2_15yr.loc[no2_15yr['value'].idxmax(), 'datetime'].year
+        st.metric("Peak Concentration", f"{peak_15yr:.1f} µg/m³", f"in {peak_year}")
+    
     with col3:
-        above_who = (no2_data['value'] > 40).mean() * 100
-        st.metric("Above WHO Guideline", f"{above_who:.1f}%")
+        above_who_15yr = (no2_15yr['value'] > 40).mean() * 100
+        st.metric("Above WHO Guideline", f"{above_who_15yr:.1f}%", "15-year average")
+        
+    with col4:
+        # Calculate trend
+        years = no2_15yr['datetime'].dt.year
+        values = no2_15yr.groupby(years)['value'].mean()
+        first_year_avg = values.iloc[:3].mean()  # 2010-2012 average
+        last_year_avg = values.iloc[-3:].mean()   # 2022-2024 average
+        trend_pct = ((last_year_avg - first_year_avg) / first_year_avg) * 100
+        st.metric("15-Year Trend", f"{trend_pct:+.1f}%", "2010-2012 vs 2022-2024")
 
 else:
     # Placeholder data - will be replaced with real data

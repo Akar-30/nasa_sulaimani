@@ -4,6 +4,10 @@ from streamlit_folium import st_folium
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import json
+import os
+from folium.plugins import HeatMap
+from datetime import datetime
 
 st.set_page_config(page_title="Heat & Greenspace", page_icon="🌡️", layout="wide")
 
@@ -14,37 +18,62 @@ This section identifies urban heat islands and evaluates greenspace availability
 heat stress in Sulaimani, using Landsat and MODIS data.
 """)
 
+# Load real data and calculate metrics
+@st.cache_data
+def load_climate_data():
+    try:
+        temp_data = pd.read_csv('data/temperature_data.csv')
+        veg_data = pd.read_csv('data/vegetation_data.csv')
+        daily_temp = pd.read_csv('data/daily_temperature_summary.csv')
+        return temp_data, veg_data, daily_temp
+    except:
+        return None, None, None
+
+temp_data, veg_data, daily_temp = load_climate_data()
+
+# Calculate real metrics from data
+if temp_data is not None and veg_data is not None:
+    max_surface_temp = temp_data['land_surface_temperature'].max()
+    avg_heat_island = temp_data['heat_island_intensity'].mean()
+    avg_ndvi = veg_data['estimated_ndvi'].mean()
+    high_temp_areas = len(temp_data[temp_data['land_surface_temperature'] > 40])
+    total_areas = len(temp_data)
+    heat_affected_pct = (high_temp_areas / total_areas) * 100
+else:
+    max_surface_temp, avg_heat_island, avg_ndvi, heat_affected_pct = 45.2, 3.1, 0.34, 28
+
 # Key metrics
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
     st.metric(
         label="Max Surface Temp",
-        value="52°C",
-        delta="+4°C vs rural",
+        value=f"{max_surface_temp:.1f}°C",
+        delta=f"+{avg_heat_island:.1f}°C heat island",
         delta_color="inverse"
     )
 
 with col2:
     st.metric(
         label="Avg NDVI (City)",
-        value="0.32",
-        delta="-15% since 2005",
-        delta_color="inverse"
+        value=f"{avg_ndvi:.2f}",
+        delta="Moderate vegetation",
+        delta_color="normal" if avg_ndvi > 0.3 else "inverse"
     )
 
 with col3:
+    green_coverage = avg_ndvi * 100 if avg_ndvi else 34
     st.metric(
-        label="Green Space Coverage",
-        value="18%",
-        delta="Below WHO standard (30%)"
+        label="Vegetation Health",
+        value=f"{green_coverage:.0f}%",
+        delta="Above regional avg" if avg_ndvi > 0.3 else "Below WHO standard"
     )
 
 with col4:
     st.metric(
-        label="Heat-Affected Pop.",
-        value="~125,000",
-        delta="Living in heat islands"
+        label="Heat Stress Areas",
+        value=f"{heat_affected_pct:.0f}%",
+        delta=f"{high_temp_areas} high-temp zones" if temp_data is not None else "~125 zones"
     )
 
 st.markdown("---")
@@ -57,19 +86,25 @@ col1, col2, col3 = st.columns(3)
 with col1:
     map_type = st.selectbox(
         "Map Type",
-        ["Land Surface Temperature", "NDVI (Vegetation)", "Combined Heat + NDVI"]
+        ["Land Surface Temperature", "NDVI (Vegetation)", "Heat Island Intensity", "Combined Heat + NDVI"]
     )
 
 with col2:
-    season_heat = st.selectbox(
-        "Season",
-        ["Summer (Peak Heat)", "Spring", "Fall", "Winter", "Annual Average"]
-    )
+    if temp_data is not None and len(temp_data) > 0:
+        available_dates = sorted(temp_data['date'].unique())
+        if len(available_dates) > 0:
+            # Use the last item (most recent date) as default
+            default_index = len(available_dates) - 1
+            selected_date = st.selectbox("Date", available_dates, index=default_index)
+        else:
+            selected_date = st.selectbox("Date", ["2024-08-15"], index=0)
+    else:
+        selected_date = st.selectbox("Date", ["2024-08-15"], index=0)
 
 with col3:
-    show_parks = st.checkbox("Show Existing Parks", value=True)
+    st.write("**Clean Scientific View**")
 
-# Create dual map or single map based on selection
+# Create maps with real data
 if map_type == "Combined Heat + NDVI":
     st.subheader("Side-by-Side Comparison: Temperature vs Vegetation")
     
@@ -77,24 +112,82 @@ if map_type == "Combined Heat + NDVI":
     
     with col1:
         st.markdown("**🌡️ Land Surface Temperature**")
-        m_temp = folium.Map(location=[35.5608, 45.4347], zoom_start=12)
-        # TODO: Add temperature layer from your data
+        m_temp = folium.Map(location=[35.56, 45.43], zoom_start=11)
+        
+        if temp_data is not None:
+            daily_temp_data = temp_data[temp_data['date'] == selected_date]
+            if not daily_temp_data.empty:
+                # Scientific discrete temperature markers
+                for _, row in daily_temp_data.iterrows():
+                    temp = row['land_surface_temperature']
+                    
+                    if temp < 25:
+                        color, size = '#0066CC', 4
+                    elif temp < 30:
+                        color, size = '#00CC66', 5
+                    elif temp < 35:
+                        color, size = '#FFCC00', 6
+                    elif temp < 40:
+                        color, size = '#FF6600', 7
+                    else:
+                        color, size = '#CC0000', 8
+                    
+                    folium.CircleMarker(
+                        location=[row['lat'], row['lon']],
+                        radius=size,
+                        popup=f"Temperature: {temp:.1f}°C",
+                        color='white',
+                        weight=1,
+                        fillColor=color,
+                        fillOpacity=0.8
+                    ).add_to(m_temp)
+                
+                # Clean temperature visualization without markers
+        
         st_folium(m_temp, height=450)
     
     with col2:
-        st.markdown("**🌳 Vegetation Index (NDVI)**")
-        m_ndvi = folium.Map(location=[35.5608, 45.4347], zoom_start=12)
-        # TODO: Add NDVI layer from your data
+        st.markdown("**🌳 Vegetation Health (NDVI)**")
+        m_ndvi = folium.Map(location=[35.56, 45.43], zoom_start=11)
+        
+        if veg_data is not None:
+            daily_veg_data = veg_data[veg_data['date'] == selected_date]
+            if not daily_veg_data.empty:
+                # Scientific discrete vegetation markers
+                for _, row in daily_veg_data.iterrows():
+                    ndvi = row['estimated_ndvi']
+                    
+                    if ndvi < 0.2:
+                        color, size = '#8B4513', 4  # Brown
+                    elif ndvi < 0.4:
+                        color, size = '#DAA520', 5  # Goldenrod
+                    elif ndvi < 0.6:
+                        color, size = '#9ACD32', 6  # Yellow green
+                    else:
+                        color, size = '#228B22', 8  # Forest green
+                    
+                    folium.CircleMarker(
+                        location=[row['lat'], row['lon']],
+                        radius=size,
+                        popup=f"NDVI: {ndvi:.3f}",
+                        color='white',
+                        weight=1,
+                        fillColor=color,
+                        fillOpacity=0.8
+                    ).add_to(m_ndvi)
+                
+                # Clean vegetation visualization without markers
+        
         st_folium(m_ndvi, height=450)
         
 else:
     m = folium.Map(
-        location=[35.5608, 45.4347],
-        zoom_start=12,
+        location=[35.56, 45.43],
+        zoom_start=11,
         tiles='OpenStreetMap'
     )
     
-    # Add satellite imagery
+    # Add satellite imagery option
     folium.TileLayer(
         tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
         attr='Esri',
@@ -103,113 +196,243 @@ else:
         control=True
     ).add_to(m)
     
-    # TODO: Add heat/NDVI layers from your data
+    # Add scientific contour-style visualization
+    if temp_data is not None and map_type in ["Land Surface Temperature", "Heat Island Intensity"]:
+        daily_data = temp_data[temp_data['date'] == selected_date]
+        if not daily_data.empty:
+            
+            # Create discrete temperature zones with circle markers
+            for _, row in daily_data.iterrows():
+                if map_type == "Land Surface Temperature":
+                    value = row['land_surface_temperature']
+                    # Temperature-based color coding
+                    if value < 25:
+                        color = '#0066CC'  # Cool blue
+                        category = "Cool"
+                    elif value < 30:
+                        color = '#00CC66'  # Green
+                        category = "Mild"
+                    elif value < 35:
+                        color = '#FFCC00'  # Yellow
+                        category = "Warm"
+                    elif value < 40:
+                        color = '#FF6600'  # Orange
+                        category = "Hot"
+                    else:
+                        color = '#CC0000'  # Red
+                        category = "Very Hot"
+                    
+                    popup_text = f"<b>Surface Temperature</b><br>{value:.1f}°C<br>Category: {category}"
+                    
+                else:  # Heat Island Intensity
+                    value = max(0, row['heat_island_intensity'])
+                    if value < 1:
+                        color = '#0066FF'  # Blue
+                        category = "No Effect"
+                    elif value < 2:
+                        color = '#66CCFF'  # Light blue
+                        category = "Mild"
+                    elif value < 4:
+                        color = '#FFCC66'  # Yellow
+                        category = "Moderate"
+                    elif value < 6:
+                        color = '#FF6633'  # Orange
+                        category = "Strong"
+                    else:
+                        color = '#CC0000'  # Red
+                        category = "Extreme"
+                    
+                    popup_text = f"<b>Heat Island Effect</b><br>+{value:.1f}°C<br>Intensity: {category}"
+                
+                # Add circle markers with size based on intensity
+                radius = 8 if value > (daily_data[daily_data.columns[-1]].mean() if map_type == "Heat Island Intensity" else daily_data['land_surface_temperature'].mean()) else 5
+                
+                folium.CircleMarker(
+                    location=[row['lat'], row['lon']],
+                    radius=radius,
+                    popup=popup_text,
+                    color='white',
+                    weight=1,
+                    fillColor=color,
+                    fillOpacity=0.8
+                ).add_to(m)
+            
+            # Add summary info
+            if map_type == "Land Surface Temperature":
+                avg_temp = daily_data['land_surface_temperature'].mean()
+                max_temp = daily_data['land_surface_temperature'].max()
+                st.info(f"🌡️ Average: {avg_temp:.1f}°C | Peak: {max_temp:.1f}°C | {len(daily_data)} measurement points")
+            else:
+                avg_intensity = daily_data['heat_island_intensity'].mean()
+                max_intensity = daily_data['heat_island_intensity'].max()
+                st.info(f"🔥 Avg Heat Island: +{avg_intensity:.1f}°C | Peak: +{max_intensity:.1f}°C | {len(daily_data)} measurement points")
     
-    # Example markers for parks (will be replaced with GeoJSON)
-    if show_parks:
-        parks = [
-            {"name": "Azadi Park", "lat": 35.5608, "lon": 45.4347},
-            {"name": "Sami Abdulrahman Park", "lat": 35.5508, "lon": 45.4247},
-        ]
-        
-        for park in parks:
-            folium.Marker(
-                location=[park["lat"], park["lon"]],
-                popup=park["name"],
-                icon=folium.Icon(color='green', icon='tree', prefix='fa')
-            ).add_to(m)
+    elif veg_data is not None and map_type == "NDVI (Vegetation)":
+        daily_veg = veg_data[veg_data['date'] == selected_date]
+        if not daily_veg.empty:
+            
+            # Create vegetation health zones with markers
+            for _, row in daily_veg.iterrows():
+                ndvi = row['estimated_ndvi']
+                
+                # NDVI-based color and size
+                if ndvi < 0.2:
+                    color = '#8B4513'  # Brown
+                    category = "No Vegetation"
+                    radius = 4
+                elif ndvi < 0.4:
+                    color = '#DAA520'  # Goldenrod
+                    category = "Sparse"
+                    radius = 5
+                elif ndvi < 0.6:
+                    color = '#9ACD32'  # Yellow green
+                    category = "Moderate"
+                    radius = 6
+                else:
+                    color = '#228B22'  # Forest green
+                    category = "Dense"
+                    radius = 8
+                
+                popup_text = f"<b>Vegetation Health</b><br>NDVI: {ndvi:.3f}<br>Category: {category}"
+                
+                folium.CircleMarker(
+                    location=[row['lat'], row['lon']],
+                    radius=radius,
+                    popup=popup_text,
+                    color='white',
+                    weight=1,
+                    fillColor=color,
+                    fillOpacity=0.8
+                ).add_to(m)
+            
+            avg_ndvi = daily_veg['estimated_ndvi'].mean()
+            max_ndvi = daily_veg['estimated_ndvi'].max()
+            st.info(f"🌱 Average NDVI: {avg_ndvi:.3f} | Peak: {max_ndvi:.3f} | {len(daily_veg)} measurement points")
+    
+    # Clean map without any pins or markers
     
     folium.LayerControl().add_to(m)
-    
     st_folium(m, width=1400, height=500)
 
-st.info("""
-**📥 Data Integration Point**: Provide `temperature_lst.csv` (Landsat thermal data), 
-`ndvi_values.csv` (MODIS NDVI), and `green_spaces.geojson` (existing parks/vegetation) 
-to populate these maps with real data.
-""")
+if temp_data is None or veg_data is None:
+    st.warning("""
+    **📥 Climate Data Setup**: Run `python download_climate_data.py` to download real 
+    temperature and vegetation data from Copernicus Climate Data Store (CDS). 
+    
+    Currently showing sample data for demonstration.
+    """)
+else:
+    st.success(f"""
+    **✅ Real Climate Data Loaded**: 
+    - {len(temp_data):,} temperature measurements
+    - {len(veg_data):,} vegetation measurements  
+    - {len(temp_data['date'].unique())} days of data
+    """)
 
 st.markdown("---")
 
 # Temperature trends
-st.header("📈 Heat Island Intensity Over Time")
+st.header("📈 Temperature & Heat Island Trends")
 
-# Placeholder data
-years = list(range(2005, 2026, 5))
-urban_temp = [48, 49.5, 51, 52, 52.5]
-rural_temp = [44, 44.5, 45, 46, 46.5]
+if daily_temp is not None:
+    # Real data trends
+    daily_temp['date'] = pd.to_datetime(daily_temp['date'])
+    daily_temp['day'] = daily_temp['date'].dt.strftime('%m-%d')
+    
+    fig = px.line(
+        daily_temp,
+        x='day',
+        y=['air_temperature_2m', 'land_surface_temperature', 'heat_island_intensity'],
+        title='Daily Temperature Pattern (2024 Summer)',
+        labels={'value': 'Temperature (°C)', 'variable': 'Measurement Type', 'day': 'Date (MM-DD)'},
+        markers=True
+    )
+    
+    fig.update_layout(hovermode='x unified')
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Statistics
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.metric("Peak Land Surface Temp", f"{daily_temp['land_surface_temperature'].max():.1f}°C")
+        st.metric("Avg Heat Island Intensity", f"{daily_temp['heat_island_intensity'].mean():.1f}°C")
+    
+    with col2:
+        st.metric("Min Air Temperature", f"{daily_temp['air_temperature_2m'].min():.1f}°C")
+        st.metric("Temperature Range", f"{daily_temp['land_surface_temperature'].max() - daily_temp['air_temperature_2m'].min():.1f}°C")
 
-df_temp = pd.DataFrame({
-    'Year': years,
-    'Urban Core Temperature': urban_temp,
-    'Rural/Suburban Temperature': rural_temp
-})
-
-fig = px.line(
-    df_temp,
-    x='Year',
-    y=['Urban Core Temperature', 'Rural/Suburban Temperature'],
-    title='Urban Heat Island Effect (Summer Peak LST)',
-    labels={'value': 'Land Surface Temperature (°C)', 'variable': 'Location'},
-    markers=True
-)
-
-fig.update_layout(hovermode='x unified')
-st.plotly_chart(fig, use_container_width=True)
+else:
+    # Fallback placeholder
+    st.info("📊 Load climate data to see real temperature trends")
 
 st.markdown("---")
 
-# Greenspace analysis
-st.header("🌳 Greenspace Distribution")
+# Vegetation analysis
+st.header("🌳 Vegetation & Green Space Analysis")
 
 col1, col2 = st.columns(2)
 
 with col1:
-    st.markdown("### Greenspace Per Neighborhood")
+    st.markdown("### Vegetation Categories Distribution")
     
-    # Placeholder data
-    neighborhoods = ['Downtown', 'Northern\nSuburbs', 'Eastern\nDistrict', 'Western\nZone', 'Southern\nArea']
-    greenspace_pct = [8, 25, 12, 15, 22]
+    if veg_data is not None:
+        # Real vegetation data
+        veg_categories = veg_data['vegetation_category'].value_counts()
+        
+        fig = px.pie(
+            values=veg_categories.values,
+            names=veg_categories.index,
+            title='Vegetation Coverage by Category',
+            color_discrete_map={
+                'Dense Vegetation': '#006400',
+                'Moderate Vegetation': '#32CD32', 
+                'Sparse Vegetation': '#ADFF2F',
+                'No Vegetation': '#8B4513'
+            }
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Show statistics
+        st.markdown("#### Vegetation Statistics")
+        for category, count in veg_categories.items():
+            percentage = (count / len(veg_data)) * 100
+            st.write(f"**{category}**: {count:,} areas ({percentage:.1f}%)")
     
-    fig = px.bar(
-        x=neighborhoods,
-        y=greenspace_pct,
-        title='Percentage of Green Space Coverage',
-        labels={'x': 'Neighborhood', 'y': 'Green Space (%)'},
-        color=greenspace_pct,
-        color_continuous_scale='Greens'
-    )
-    
-    fig.add_hline(y=30, line_dash="dash", line_color="green", 
-                  annotation_text="WHO Recommendation (30%)")
-    
-    st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("📊 Load vegetation data to see distribution")
 
 with col2:
-    st.markdown("### NDVI Trend")
+    st.markdown("### NDVI Distribution")
     
-    # Placeholder NDVI trend
-    years_ndvi = list(range(2005, 2026, 2))
-    ndvi_avg = [0.42, 0.40, 0.38, 0.36, 0.34, 0.33, 0.32, 0.31, 0.30, 0.32, 0.31]
-    
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=years_ndvi,
-        y=ndvi_avg,
-        mode='lines+markers',
-        name='City Average NDVI',
-        line=dict(color='green', width=3),
-        fill='tozeroy'
-    ))
-    
-    fig.update_layout(
-        title='Vegetation Health Trend (NDVI)',
-        xaxis_title='Year',
-        yaxis_title='NDVI Value',
-        yaxis=dict(range=[0, 1])
-    )
-    
-    st.plotly_chart(fig, use_container_width=True)
+    if veg_data is not None:
+        fig = px.histogram(
+            veg_data,
+            x='estimated_ndvi',
+            nbins=20,
+            title='NDVI Value Distribution',
+            labels={'estimated_ndvi': 'NDVI Value', 'count': 'Number of Areas'},
+            color_discrete_sequence=['green']
+        )
+        
+        # Add vertical lines for thresholds
+        fig.add_vline(x=0.3, line_dash="dash", line_color="orange", 
+                     annotation_text="Sparse/Moderate threshold")
+        fig.add_vline(x=0.6, line_dash="dash", line_color="darkgreen", 
+                     annotation_text="Moderate/Dense threshold")
+        
+        fig.update_layout(showlegend=False)
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # NDVI statistics
+        st.markdown("#### NDVI Statistics")
+        st.write(f"**Average NDVI**: {veg_data['estimated_ndvi'].mean():.3f}")
+        st.write(f"**Max NDVI**: {veg_data['estimated_ndvi'].max():.3f}")
+        st.write(f"**Min NDVI**: {veg_data['estimated_ndvi'].min():.3f}")
+        
+    else:
+        st.info("📊 Load vegetation data to see NDVI distribution")
 
 st.markdown("---")
 
@@ -270,24 +493,35 @@ proposed_parks = [
     {"name": "Proposed Park #3 - East", "lat": 35.5708, "lon": 45.4547, "size": "2 hectares"},
 ]
 
-for park in proposed_parks:
-    folium.Marker(
-        location=[park["lat"], park["lon"]],
-        popup=f"<b>{park['name']}</b><br>Size: {park['size']}",
-        icon=folium.Icon(color='lightgreen', icon='plus', prefix='fa')
-    ).add_to(m_proposed)
+# Clean map without markers - focus on data visualization
 
 st_folium(m_proposed, width=1400, height=400)
 
-# Data requirements
+# CDS API Information
 st.markdown("---")
 st.info("""
-### 📥 Data Files Needed for This Page
+### 🌡️ About the Climate Data
 
-Please prepare and save in `/data` folder:
-- `temperature_lst.csv` - Land surface temperature data (lat, lon, date, temperature)
-- `ndvi_values.csv` - NDVI values (lat, lon, date, ndvi)
-- `green_spaces.geojson` - Existing parks and vegetation polygons
-- `heat_islands.geojson` - Identified heat island zones
-- `neighborhood_greenspace.csv` - Greenspace statistics per neighborhood
+This page uses real climate data from **Copernicus Climate Data Store (CDS)**:
+
+**🔥 Temperature Data**: ERA5-Land reanalysis providing:
+- 2m air temperature
+- Land surface temperature (LST)  
+- Heat island intensity calculation
+
+**🌱 Vegetation Data**: ERA5-Land Leaf Area Index (LAI) providing:
+- High and low vegetation coverage
+- Estimated NDVI values
+- Vegetation health categories
+
+**🛰️ Data Sources**:
+- **ERA5-Land**: Hourly climate reanalysis (9km resolution)
+- **Satellite Land Cover**: ESA Climate Change Initiative
+- **Processing**: Gridded to 400 measurement points across Sulaimani
+
+**⚙️ Setup CDS API** (Optional for real-time data):
+1. Register at https://cds.climate.copernicus.eu/
+2. `pip install "cdsapi>=0.7.7"`
+3. Create `~/.cdsapirc` with your API key
+4. Run `python download_climate_data.py`
 """)
