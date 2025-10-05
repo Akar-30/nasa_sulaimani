@@ -11,7 +11,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import os
 import json
-from geopy.distance import geodesic
+import math
 
 # Page configuration
 st.set_page_config(
@@ -304,13 +304,13 @@ def extract_coordinates(osm_data):
 def haversine_distance(lat1, lon1, lat2, lon2):
     """Calculate the great circle distance between two points on earth (in kilometers)"""
     # Convert decimal degrees to radians
-    lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
+    lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
     
     # Haversine formula
     dlat = lat2 - lat1
     dlon = lon2 - lon1
-    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
-    c = 2 * asin(sqrt(a))
+    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+    c = 2 * math.asin(math.sqrt(a))
     
     # Radius of earth in kilometers
     r = 6371

@@ -1,0 +1,10 @@
+neighborhood,avg_density,total_population,num_cells,min_density,max_density
+Central Central,1775.97,346315.0,195,60.62,2723.51
+Central West,1088.16,212190.0,195,171.64,2589.62
+South Central,732.6,142858.0,195,167.4,2391.35
+South East,477.24,93062.0,195,148.45,1839.98
+North Central,392.42,70636.0,180,16.46,1529.48
+North West,315.54,56798.0,180,104.74,896.94
+South West,211.87,41315.0,195,103.81,592.87
+Central East,106.41,20750.0,195,12.91,753.22
+North East,74.15,13348.0,180,16.07,211.6

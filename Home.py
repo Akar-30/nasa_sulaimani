@@ -59,6 +59,20 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# Featured Solution Highlight
+st.markdown("""
+<div class="highlight-box">
+    <h2>🌟 NEW: Integrated Area Analysis</h2>
+    <p style="font-size: 1.1rem;">
+        <strong>🎯 Interactive Solution Page Available!</strong> Draw any area on the map and get instant 
+        multi-criteria analysis combining air quality, heat stress, infrastructure accessibility, 
+        economic activity, and population density. Get specific improvement recommendations 
+        for sustainable development planning.
+    </p>
+    <p><em>→ Check out the "🎯 Integrated Solution" page in the sidebar!</em></p>
+</div>
+""", unsafe_allow_html=True)
+
 # Introduction
 col1, col2 = st.columns([2, 1])
 
@@ -184,15 +198,17 @@ with col2:
     - Heat & Greenspace
     - Topography Analysis
     - Infrastructure Accessibility
-    - Water Resources
+    - Nighttime Lights
+    - Population Density
     """)
 
 with col3:
     st.markdown("""
-    #### ✅ Solutions
-    - Sustainable Zoning
-    - Green Infrastructure
-    - Future Vision
+    #### 🎯 Integrated Solutions
+    - Multi-Criteria Analysis
+    - Area-Specific Assessment
+    - Development Recommendations
+    - Sustainable Planning
     """)
 
 # Footer

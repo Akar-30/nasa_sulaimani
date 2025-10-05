@@ -1,0 +1,22 @@
+{
+  "coverage_area": {
+    "north_lat": 35.714444,
+    "south_lat": 35.427222,
+    "west_lon": 45.155833,
+    "east_lon": 45.551944
+  },
+  "grid_resolution": {
+    "grid_size": 100,
+    "total_points": 10000,
+    "spacing_km": 0.31937629220708175
+  },
+  "datasets": {
+    "topography_points": 10000,
+    "infrastructure_points": 10000,
+    "population_points": 10000,
+    "economic_points": 10000,
+    "total_data_points": 40000
+  },
+  "generation_timestamp": "2025-10-05T14:47:54.403000",
+  "note": "Synthetic data generated for fast solution page preparation"
+}

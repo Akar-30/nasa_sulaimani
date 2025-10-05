@@ -11,7 +11,26 @@ from plotly.subplots import make_subplots
 import os
 from datetime import datetime, timedelta
 import json
-from geopy.distance import geodesic
+import math
+
+def calculate_distance(lat1, lon1, lat2, lon2):
+    """
+    Calculate the great circle distance between two points 
+    on the earth (specified in decimal degrees)
+    Returns distance in kilometers
+    """
+    # Convert decimal degrees to radians
+    lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+    
+    # Haversine formula
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+    c = 2 * math.asin(math.sqrt(a))
+    
+    # Radius of earth in kilometers
+    r = 6371
+    return c * r
 
 # Page configuration
 st.set_page_config(
@@ -272,7 +291,7 @@ def run_population_analysis():
     
     for i, (coord, norm_density) in enumerate(zip(coordinates, normalized_densities)):
         # Calculate distance from center for pressure calculation
-        distance_km = geodesic(coord, SULAIMANI_CENTER).kilometers
+        distance_km = calculate_distance(coord[0], coord[1], SULAIMANI_CENTER[0], SULAIMANI_CENTER[1])
         distance_degrees = distance_km / 111.0  # Approximate conversion
         
         suitability = calculate_development_suitability_score(norm_density)
@@ -301,7 +320,7 @@ def run_population_analysis():
         'development_suitability_score': suitability_scores,
         'population_pressure_index': population_pressures,
         'planning_zone': planning_zones,
-        'distance_from_center_km': [geodesic(coord, SULAIMANI_CENTER).kilometers for coord in coordinates]
+        'distance_from_center_km': [calculate_distance(coord[0], coord[1], SULAIMANI_CENTER[0], SULAIMANI_CENTER[1]) for coord in coordinates]
     })
     
     # Save results
