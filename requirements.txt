@@ -24,6 +24,10 @@ pystac-client>=0.7.0
 requests>=2.31.0
 netCDF4>=1.6.0
 
+# Infrastructure analysis
+overpy>=0.6.0
+geopy>=2.3.0
+
 # Climate data processing
 cdsapi>=0.7.7
 xarray>=0.20.0

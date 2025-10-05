@@ -26,9 +26,9 @@ def create_consistent_measurement_grid():
     min_lat, min_lon = bounds[0]  # Southwest corner
     max_lat, max_lon = bounds[1]  # Northeast corner
     
-    # Create regular grid - 20x20 = 400 measurement points
-    n_points_lat = 20
-    n_points_lon = 20
+    # Create regular grid - 40x40 = 1600 measurement points
+    n_points_lat = 40
+    n_points_lon = 40
     
     lats = np.linspace(min_lat, max_lat, n_points_lat)
     lons = np.linspace(min_lon, max_lon, n_points_lon)
@@ -189,8 +189,8 @@ def create_consistent_air_quality_dataset():
         'AER_AI': {'units': 'AI', 'guideline': 2.0}
     }
     
-    # Generate 10 days of data
-    dates = [(datetime.now() - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(10)]
+    # Generate 5 days of data (reduced from 10 for memory efficiency with 40x40 grid)
+    dates = [(datetime.now() - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(5)]
     
     all_datasets = {}
     
@@ -278,7 +278,7 @@ def create_consistent_air_quality_dataset():
     print(f"\n🎯 SUMMARY:")
     print(f"   ✅ Created consistent {len(grid)} point grid for all pollutants")
     print(f"   ✅ Generated {len(dates)} days of interpolated data")
-    print(f"   ✅ Total measurements: {len(combined_df):,} (400 points × 10 days)")
+    print(f"   ✅ Total measurements: {len(combined_df):,} ({len(grid)} points × {len(dates)} days)")
     print(f"   ✅ Combined dataset: data/air_quality_combined_grid.csv")
     print(f"   🗺️ Ready for correlation analysis and composite air quality index")
     
@@ -397,7 +397,7 @@ if __name__ == "__main__":
     print(f"\n" + "="*65)
     print("🎯 READY FOR AIR POLLUTION ANALYSIS!")
     print("="*65)
-    print("✅ All 6 pollutants now measured at same 400 grid points")
+    print("✅ All 6 pollutants now measured at same 1600 grid points")
     print("✅ Smooth interpolated surfaces for better visualization") 
     print("✅ Composite Air Quality Index calculated")
     print("✅ Ready to identify pollution sources and patterns")

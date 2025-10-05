@@ -182,6 +182,8 @@ with col2:
     #### 📊 Data Insights
     - Air Quality & Health
     - Heat & Greenspace
+    - Topography Analysis
+    - Infrastructure Accessibility
     - Water Resources
     """)
 

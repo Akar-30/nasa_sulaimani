@@ -105,7 +105,7 @@ def analyze_air_quality_system():
     print(f"\n🎯 SYSTEM CAPABILITIES:")
     capabilities = [
         "✅ 6 different air pollutants (NO₂, SO₂, CO, O₃, HCHO, Aerosols)",
-        "✅ Consistent 20×20 spatial grid (400 measurement points)",
+        "✅ Consistent 40×40 spatial grid (1600 measurement points)",
         "✅ Smooth spatial interpolation for realistic pollution surfaces", 
         "✅ Composite Air Quality Index combining all pollutants",
         "✅ WHO health guideline comparisons",

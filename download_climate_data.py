@@ -287,8 +287,8 @@ def create_sample_data():
     print("🔄 Creating sample heat and vegetation data...")
     
     # Create sample temperature grid
-    lats = np.linspace(35.40, 35.72, 20)
-    lons = np.linspace(45.25, 45.62, 20)
+    lats = np.linspace(35.40, 35.72, 40)
+    lons = np.linspace(45.25, 45.62, 40)
     dates = pd.date_range('2024-06-01', '2024-08-31', freq='D')
     
     temperature_data = []

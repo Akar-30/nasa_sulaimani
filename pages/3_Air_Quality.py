@@ -47,7 +47,7 @@ with st.sidebar:
     Use the checkbox to toggle population overlay on the map.
     """)
 
-st.title("💨 Air Quality & Public Health")
+st.title("💨 Air Quality")
 
 st.markdown("""
 This section identifies pollution hotspots in Sulaimani and highlights communities most at risk 
@@ -493,108 +493,132 @@ st_folium(m, width=1400, height=500)
 st.markdown("---")
 
 # Temporal trends
-st.header("📈 15-Year Air Quality Trends")
+# st.header("📈 15-Year Air Quality Trends")
 
 # Use 15-year data for comprehensive trend analysis
-if os.path.exists('data/air_quality_no2_15_year.csv'):
-    no2_15yr = pd.read_csv('data/air_quality_no2_15_year.csv')
+# if os.path.exists('data/air_quality_no2_15_year.csv'):
+#     no2_15yr = pd.read_csv('data/air_quality_no2_15_year.csv')
     
-    # Calculate monthly averages for trend visualization
-    no2_15yr['datetime'] = pd.to_datetime(no2_15yr['date'])
-    no2_15yr['year_month'] = no2_15yr['datetime'].dt.to_period('M')
+#     # Calculate monthly averages for trend visualization
+#     no2_15yr['datetime'] = pd.to_datetime(no2_15yr['date'])
+#     # Use datetime grouping instead of period to avoid potential issues
+#     no2_15yr['year_month'] = no2_15yr['datetime'].dt.to_period('ME')  # Use 'ME' for month end
     
-    monthly_avg = no2_15yr.groupby('year_month')['value'].mean().reset_index()
-    monthly_avg['date'] = monthly_avg['year_month'].dt.to_timestamp()
-    monthly_avg = monthly_avg.sort_values('date')
+#     monthly_avg = no2_15yr.groupby('year_month')['value'].mean().reset_index()
+#     monthly_avg['date'] = monthly_avg['year_month'].dt.to_timestamp()
+#     monthly_avg = monthly_avg.sort_values('date')
     
-    # Add data source information
-    monthly_avg['data_source'] = monthly_avg['date'].apply(
-        lambda x: 'OMI' if x.year < 2018 else 'Sentinel-5P'
-    )
+#     # Add data source information
+#     monthly_avg['data_source'] = monthly_avg['date'].apply(
+#         lambda x: 'OMI' if x.year < 2018 else 'Sentinel-5P'
+#     )
     
-    # Create comprehensive trend plot
-    fig = px.line(
-        monthly_avg,
-        x='date',
-        y='value',
-        color='data_source',
-        title='15-Year NO₂ Concentration Trends in Sulaimani (2010-2024)',
-        labels={'value': 'NO₂ Concentration (µg/m³)', 'date': 'Date', 'data_source': 'Data Source'},
-        markers=True
-    )
+#     # Create comprehensive trend plot
+#     fig = px.line(
+#         monthly_avg,
+#         x='date',
+#         y='value',
+#         color='data_source',
+#         title='15-Year NO₂ Concentration Trends in Sulaimani (2010-2024)',
+#         labels={'value': 'NO₂ Concentration (µg/m³)', 'date': 'Date', 'data_source': 'Data Source'},
+#         markers=True
+#     )
     
-    # Add WHO guideline line
-    fig.add_hline(y=40, line_dash="dash", line_color="orange", 
-                  annotation_text="WHO NO₂ Guideline (40 µg/m³)")
+#     # Add WHO guideline line
+#     fig.add_hline(y=40, line_dash="dash", line_color="orange", 
+#                   annotation_text="WHO NO₂ Guideline (40 µg/m³)")
     
-    # Add vertical line for data source transition using datetime object
-    transition_date = pd.to_datetime('2018-01-01')
-    fig.add_vline(x=transition_date, line_dash="dot", line_color="gray",
-                  annotation_text="OMI → Sentinel-5P")
-    
-    # Highlight COVID-19 period using datetime objects
-    covid_start = pd.to_datetime('2020-03-01')
-    covid_end = pd.to_datetime('2020-12-31')
-    fig.add_vrect(x0=covid_start, x1=covid_end,
-                  fillcolor="lightblue", opacity=0.2, annotation_text="COVID-19")
-    
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # Enhanced statistics with 15-year context
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        avg_15yr = no2_15yr['value'].mean()
-        st.metric("15-Year Average", f"{avg_15yr:.1f} µg/m³")
-    
-    with col2:
-        peak_15yr = no2_15yr['value'].max()
-        peak_year = no2_15yr.loc[no2_15yr['value'].idxmax(), 'datetime'].year
-        st.metric("Peak Concentration", f"{peak_15yr:.1f} µg/m³", f"in {peak_year}")
-    
-    with col3:
-        above_who_15yr = (no2_15yr['value'] > 40).mean() * 100
-        st.metric("Above WHO Guideline", f"{above_who_15yr:.1f}%", "15-year average")
+#     # Add annotations using Plotly's shapes instead of add_vline/add_vrect to avoid timestamp issues
+#     try:
+#         # Add vertical line for data source transition
+#         transition_candidates = monthly_avg[monthly_avg['date'].dt.year == 2018]['date']
+#         if len(transition_candidates) > 0:
+#             transition_date = transition_candidates.iloc[0].strftime('%Y-%m-%d')  # Convert to string
+#             fig.add_annotation(
+#                 x=transition_date,
+#                 y=monthly_avg['value'].max(),
+#                 text="OMI → Sentinel-5P",
+#                 showarrow=True,
+#                 arrowhead=2,
+#                 arrowcolor="gray",
+#                 font=dict(color="gray", size=10)
+#             )
         
-    with col4:
-        # Calculate trend
-        years = no2_15yr['datetime'].dt.year
-        values = no2_15yr.groupby(years)['value'].mean()
-        first_year_avg = values.iloc[:3].mean()  # 2010-2012 average
-        last_year_avg = values.iloc[-3:].mean()   # 2022-2024 average
-        trend_pct = ((last_year_avg - first_year_avg) / first_year_avg) * 100
-        st.metric("15-Year Trend", f"{trend_pct:+.1f}%", "2010-2012 vs 2022-2024")
+#         # Highlight COVID-19 period with text annotation
+#         covid_data = monthly_avg[(monthly_avg['date'].dt.year == 2020) & (monthly_avg['date'].dt.month >= 3)]
+#         if len(covid_data) >= 2:
+#             covid_mid_idx = len(covid_data) // 2
+#             covid_mid_date = covid_data['date'].iloc[covid_mid_idx].strftime('%Y-%m-%d')
+#             fig.add_annotation(
+#                 x=covid_mid_date,
+#                 y=monthly_avg['value'].min(),
+#                 text="COVID-19 Period",
+#                 showarrow=True,
+#                 arrowhead=2,
+#                 arrowcolor="lightblue",
+#                 font=dict(color="blue", size=10)
+#             )
+#     except Exception as e:
+#         # If annotations fail, continue without them
+#         st.caption(f"Note: Some chart annotations unavailable due to data format issues")
+    
+#     st.plotly_chart(fig, use_container_width=True)
+    
+#     # Enhanced statistics with 15-year context
+#     col1, col2, col3, col4 = st.columns(4)
+    
+#     with col1:
+#         avg_15yr = no2_15yr['value'].mean()
+#         st.metric("15-Year Average", f"{avg_15yr:.1f} µg/m³")
+    
+#     with col2:
+#         peak_15yr = no2_15yr['value'].max()
+#         peak_year = no2_15yr.loc[no2_15yr['value'].idxmax(), 'datetime'].year
+#         st.metric("Peak Concentration", f"{peak_15yr:.1f} µg/m³", f"in {peak_year}")
+    
+#     with col3:
+#         above_who_15yr = (no2_15yr['value'] > 40).mean() * 100
+#         st.metric("Above WHO Guideline", f"{above_who_15yr:.1f}%", "15-year average")
+        
+#     with col4:
+#         # Calculate trend
+#         years = no2_15yr['datetime'].dt.year
+#         values = no2_15yr.groupby(years)['value'].mean()
+#         first_year_avg = values.iloc[:3].mean()  # 2010-2012 average
+#         last_year_avg = values.iloc[-3:].mean()   # 2022-2024 average
+#         trend_pct = ((last_year_avg - first_year_avg) / first_year_avg) * 100
+#         st.metric("15-Year Trend", f"{trend_pct:+.1f}%", "2010-2012 vs 2022-2024")
 
-else:
-    # Placeholder data - will be replaced with real data
-    st.info("📊 Using placeholder data - upload real NO₂ data to see actual trends")
+# else:
+#     # Placeholder data - will be replaced with real data
+#     st.info("📊 Using placeholder data - upload real NO₂ data to see actual trends")
     
-    years = list(range(2018, 2026))
-    no2_values = [38, 42, 45, 48, 51, 47, 52, 55]
-    pm25_values = [52, 54, 58, 61, 64, 59, 67, 70]
+#     years = list(range(2018, 2026))
+#     no2_values = [38, 42, 45, 48, 51, 47, 52, 55]
+#     pm25_values = [52, 54, 58, 61, 64, 59, 67, 70]
 
-    df_placeholder = pd.DataFrame({
-        'Year': years,
-        'NO₂ (µg/m³)': no2_values,
-        'PM2.5 (µg/m³)': pm25_values
-    })
+#     df_placeholder = pd.DataFrame({
+#         'Year': years,
+#         'NO₂ (µg/m³)': no2_values,
+#         'PM2.5 (µg/m³)': pm25_values
+#     })
     
-    fig = px.line(
-        df_placeholder,
-        x='Year',
-        y=['NO₂ (µg/m³)', 'PM2.5 (µg/m³)'],
-        title='Air Pollutant Concentration Trends (2018-2025) - Placeholder Data',
-        labels={'value': 'Concentration (µg/m³)', 'variable': 'Pollutant'},
-        markers=True
-    )
+#     fig = px.line(
+#         df_placeholder,
+#         x='Year',
+#         y=['NO₂ (µg/m³)', 'PM2.5 (µg/m³)'],
+#         title='Air Pollutant Concentration Trends (2018-2025) - Placeholder Data',
+#         labels={'value': 'Concentration (µg/m³)', 'variable': 'Pollutant'},
+#         markers=True
+#     )
     
-    # Add WHO guideline lines
-    fig.add_hline(y=40, line_dash="dash", line_color="orange", 
-                  annotation_text="WHO NO₂ Guideline")
-    fig.add_hline(y=15, line_dash="dash", line_color="red", 
-                  annotation_text="WHO PM2.5 Guideline")
+#     # Add WHO guideline lines
+#     fig.add_hline(y=40, line_dash="dash", line_color="orange", 
+#                   annotation_text="WHO NO₂ Guideline")
+#     fig.add_hline(y=15, line_dash="dash", line_color="red", 
+#                   annotation_text="WHO PM2.5 Guideline")
     
-    st.plotly_chart(fig, use_container_width=True)
+#     st.plotly_chart(fig, use_container_width=True)
 
 st.markdown("---")
 
