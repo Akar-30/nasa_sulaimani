@@ -1,0 +1,77 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Azadi Park",
+        "type": "Existing Park",
+        "area_hectares": 15,
+        "status": "Existing"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              45.4347,
+              35.5608
+            ],
+            [
+              45.4367,
+              35.5608
+            ],
+            [
+              45.4367,
+              35.5628
+            ],
+            [
+              45.4347,
+              35.5628
+            ],
+            [
+              45.4347,
+              35.5608
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Sami Abdulrahman Park",
+        "type": "Existing Park",
+        "area_hectares": 25,
+        "status": "Existing"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              45.4247,
+              35.5508
+            ],
+            [
+              45.4287,
+              35.5508
+            ],
+            [
+              45.4287,
+              35.5538
+            ],
+            [
+              45.4247,
+              35.5538
+            ],
+            [
+              45.4247,
+              35.5508
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

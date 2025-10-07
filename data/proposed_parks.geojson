@@ -1,0 +1,79 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Downtown Green Corridor",
+        "type": "Proposed Park",
+        "area_hectares": 5,
+        "priority": "High",
+        "status": "Proposed"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              45.4397,
+              35.5658
+            ],
+            [
+              45.4417,
+              35.5658
+            ],
+            [
+              45.4417,
+              35.5678
+            ],
+            [
+              45.4397,
+              35.5678
+            ],
+            [
+              45.4397,
+              35.5658
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Northern Residential Park",
+        "type": "Proposed Park",
+        "area_hectares": 8,
+        "priority": "Medium",
+        "status": "Proposed"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              45.4447,
+              35.5758
+            ],
+            [
+              45.4477,
+              35.5758
+            ],
+            [
+              45.4477,
+              35.5788
+            ],
+            [
+              45.4447,
+              35.5788
+            ],
+            [
+              45.4447,
+              35.5758
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}
